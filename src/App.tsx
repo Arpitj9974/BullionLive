@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   TrendingUp, 
@@ -16,10 +16,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
-  ChevronDown,
-  Sparkles,
-  BrainCircuit,
-  MessageSquare
+  ChevronDown
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -32,9 +29,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import Markdown from 'react-markdown';
-
-import { fetchLivePrices, MarketData } from './services/marketService';
+import { fetchLivePrices, getCachedData, MarketData } from './services/marketService';
 import { cn } from './lib/utils';
 
 // Mock historical data for the chart
@@ -48,76 +43,47 @@ const generateMockHistory = (basePrice: number) => {
 import { historyData } from './data/historyData';
 
 export default function App() {
-  const [data, setData] = useState<MarketData | null>(null);
+  const [data, setData] = useState<MarketData | null>(() => getCachedData());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [currency, setCurrency] = useState<'USD' | 'INR'>('INR');
   const [selectedHistoryMetal, setSelectedHistoryMetal] = useState<'gold' | 'silver' | 'platinum' | 'usd_inr'>('gold');
-  const [calculator, setCalculator] = useState({ amount: 1, metal: 'gold' as keyof Omit<MarketData, 'exchangeRate' | 'isLive' | 'error'>, unit: 'g' as 'g' | 'oz' | 'kg' | 'tola' });
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [historyRange, setHistoryRange] = useState<number>(360); // Default to 30 years
+  const [calculator, setCalculator] = useState({ amount: 1, metal: 'gold' as keyof Omit<MarketData, 'exchangeRate' | 'isLive' | 'error' | 'dataAgeSeconds'>, unit: 'g' as 'g' | 'oz' | 'kg' | 'tola' });
+  const [historyRange, setHistoryRange] = useState<number>(360);
+  const isFetching = useRef(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const prices = await fetchLivePrices();
       setData(prices);
       setLastRefresh(new Date());
     } catch (err) {
-      setError('Failed to fetch live market data. Please try again.');
+      if (!silent) setError('Failed to fetch live market data. Please try again.');
       console.error(err);
     } finally {
       setLoading(false);
+      isFetching.current = false;
     }
   }, []);
 
   useEffect(() => {
-    loadData();
-    // Auto-refresh removed to save API quota. Use manual refresh button.
+    // If we already have stale data from localStorage, fetch silently in background
+    const hasCached = data !== null;
+    loadData(hasCached); // silent if cached data is present
+    // Auto-refresh every 90 seconds to keep data fresh
+    const interval = setInterval(() => loadData(true), 90_000);
+    return () => clearInterval(interval);
   }, [loadData]);
 
   const goldHistory = data ? generateMockHistory(currency === 'USD' ? data.gold.priceUsd : data.gold.priceInr) : [];
   const silverHistory = data ? generateMockHistory(currency === 'USD' ? data.silver.priceUsd : data.silver.priceInr) : [];
   const platinumHistory = data ? generateMockHistory(currency === 'USD' ? data.platinum.priceUsd : data.platinum.priceInr) : [];
   const usdInrHistory = data ? generateMockHistory(data.exchangeRate.rate) : [];
-
-  const runAiAnalysis = async () => {
-    if (!data) return;
-    setAnalyzing(true);
-    setAiAnalysis(null);
-    try {
-      const marketData = {
-        gold_usd: data.gold.priceUsd,
-        silver_usd: data.silver.priceUsd,
-        platinum_usd: data.platinum.priceUsd,
-        usd_inr: data.exchangeRate.rate,
-        gold_change_pct: data.gold.changePercent,
-        silver_change_pct: data.silver.changePercent,
-        platinum_change_pct: data.platinum.changePercent,
-      };
-      const query = `As a precious metals market analyst, provide a concise analysis of the current market in 3-4 bullet points. Focus on jewelry investment perspective.`;
-
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marketData, query })
-      });
-
-      if (!res.ok) throw new Error('Server error');
-
-      const result = await res.json();
-      // Server returns { analysis: "..." }
-      setAiAnalysis(result.analysis || result.text || "Analysis unavailable.");
-    } catch (err) {
-      console.error("AI Analysis failed:", err);
-      setAiAnalysis("Unable to generate AI analysis at this time. Please try again.");
-    } finally {
-      setAnalyzing(false);
-    }
-  };
 
   const detailedHistory = React.useMemo(() => {
     if (!data) return [];
@@ -233,10 +199,15 @@ export default function App() {
             </div>
             <div className="hidden md:flex items-center gap-2 text-xs text-white/40">
               <Clock className="w-3 h-3" />
-              <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
+              <span>Updated: {lastRefresh.toLocaleTimeString()}</span>
+              {data?.dataAgeSeconds !== undefined && data.dataAgeSeconds >= 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 text-[10px]">
+                  cache {data.dataAgeSeconds < 5 ? 'fresh' : `${data.dataAgeSeconds}s old`}
+                </span>
+              )}
             </div>
             <button 
-              onClick={loadData}
+              onClick={() => loadData(false)}
               disabled={loading}
               className="p-2 hover:bg-white/5 rounded-full transition-colors disabled:opacity-50"
             >
@@ -491,43 +462,6 @@ export default function App() {
 
           {/* Market Sentiment / Info */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <BrainCircuit className="w-5 h-5 text-yellow-500" />
-                  <h2 className="text-lg font-semibold">Gemini AI Market Analysis</h2>
-                </div>
-                <button 
-                  onClick={runAiAnalysis}
-                  disabled={analyzing || !data}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-xs font-bold text-yellow-500 transition-all disabled:opacity-50"
-                >
-                  <Sparkles className={cn("w-3.5 h-3.5", analyzing && "animate-pulse")} />
-                  {analyzing ? "Analyzing..." : "Generate Analysis"}
-                </button>
-              </div>
-
-              <div className="relative min-h-[100px] flex items-center justify-center">
-                {aiAnalysis ? (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-sm text-white/80 leading-relaxed italic w-full"
-                  >
-                    <MessageSquare className="w-4 h-4 text-yellow-500/40 absolute -left-6 top-0" />
-                    <div className="markdown-body prose prose-invert prose-sm max-w-none">
-                      <Markdown>{aiAnalysis}</Markdown>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="text-sm text-white/20 flex flex-col items-center gap-2">
-                    <Sparkles className="w-8 h-8 opacity-10" />
-                    <p>Click the button above for an AI-powered market perspective.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-6">
                 <History className="w-5 h-5 text-yellow-500" />

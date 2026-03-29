@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AR-AuAgPt</string>
+    <string name="title_activity_main">AR-AuAgPt</string>
+    <string name="package_name">com.arpit.bullionlive</string>
+    <string name="custom_url_scheme">com.arpit.bullionlive</string>
+</resources>
