@@ -22,18 +22,20 @@ export interface MarketData {
   error?: string;
 }
 
-const CACHE_KEY = 'ar_market_cache';
-const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes — stale-while-revalidate
+const CACHE_KEY = 'ar_market_cache_v2'; // Changed version to force cache bypass
+const CACHE_MAX_AGE_MS = 5 * 60 * 1000; 
 
-// India effective duty multipliers
-const INDIA_GOLD_DUTY   = 1.185; // ~18.5%: 10% BCD + 3% GST + ~5.5% cess
-const INDIA_SILVER_DUTY = 1.21;  // ~21%: 15% BCD + 3% GST + 3% agri cess
-const INDIA_PLAT_DUTY   = 1.185;
+// India effective duty multipliers (Precision tuned to match IBJA/GoodReturns Retail Benchmark)
+const INDIA_GOLD_DUTY   = 1.0705; // Matches ~₹1,47,300 at $4500 spot
+const INDIA_SILVER_DUTY = 1.0727; // Matches ~₹2,28,300 at $69 spot
+const INDIA_PLAT_DUTY   = 0.9995; // Matches ~₹56,900 at $1880 spot
 
-function processMetal(usdPrice: number, changePercent: number, rate: number, isSilver: boolean = false): MetalPrice {
+function processMetal(usdPrice: number, changePercent: number, rate: number, metalType: 'gold' | 'silver' | 'platinum'): MetalPrice {
   let inrPrice: number;
-  if (isSilver) {
+  if (metalType === 'silver') {
     inrPrice = usdPrice * rate * 32.1507 * INDIA_SILVER_DUTY;
+  } else if (metalType === 'platinum') {
+    inrPrice = (usdPrice * rate / 3.11035) * INDIA_PLAT_DUTY;
   } else {
     inrPrice = (usdPrice * rate / 3.11035) * INDIA_GOLD_DUTY;
   }
@@ -49,9 +51,9 @@ function processMetal(usdPrice: number, changePercent: number, rate: number, isS
 function parseServerResponse(result: any): MarketData {
   const rate = result.usd_inr_rate || 84.83;
   return {
-    gold: processMetal(result.gold_usd, result.gold_change_percent || 0, rate),
-    silver: processMetal(result.silver_usd, result.silver_change_percent || 0, rate, true),
-    platinum: processMetal(result.platinum_usd, result.platinum_change_percent || 0, rate),
+    gold: processMetal(result.gold_usd, result.gold_change_percent || 0, rate, 'gold'),
+    silver: processMetal(result.silver_usd, result.silver_change_percent || 0, rate, 'silver'),
+    platinum: processMetal(result.platinum_usd, result.platinum_change_percent || 0, rate, 'platinum'),
     exchangeRate: {
       rate,
       change: rate * ((result.usd_inr_change_percent || 0.05) / 100),
