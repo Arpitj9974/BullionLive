@@ -159,12 +159,12 @@ export default function App() {
     <div className="min-h-screen bg-[#0A0A0B] text-white font-sans selection:bg-yellow-500/30">
       {/* Header */}
       <header className="border-b border-white/10 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg shadow-yellow-500/20">
-              <Coins className="w-5 h-5 text-black" />
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-lg shadow-yellow-500/20">
+              <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">AR-<span className="text-yellow-500">AuAgPt</span></h1>
+            <h1 className="text-base sm:text-xl font-bold tracking-tight whitespace-nowrap">AR-<span className="text-yellow-500">AuAgPt</span></h1>
             {data && (
               <div className={cn(
                 "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
@@ -176,12 +176,12 @@ export default function App() {
             )}
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex bg-white/5 rounded-lg p-0.5 sm:p-1 border border-white/10">
               <button 
                 onClick={() => setCurrency('USD')}
                 className={cn(
-                  "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                  "px-2 sm:px-3 py-1 rounded-md text-[10px] sm:text-xs font-medium transition-all",
                   currency === 'USD' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
                 )}
               >
@@ -190,7 +190,7 @@ export default function App() {
               <button 
                 onClick={() => setCurrency('INR')}
                 className={cn(
-                  "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                  "px-2 sm:px-3 py-1 rounded-md text-[10px] sm:text-xs font-medium transition-all",
                   currency === 'INR' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
                 )}
               >
@@ -209,9 +209,9 @@ export default function App() {
             <button 
               onClick={() => loadData(false)}
               disabled={loading}
-              className="p-2 hover:bg-white/5 rounded-full transition-colors disabled:opacity-50"
+              className="p-1.5 sm:p-2 hover:bg-white/5 rounded-full transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
+              <RefreshCw className={cn("w-4 h-4 sm:w-5 sm:h-5", loading && "animate-spin")} />
             </button>
           </div>
         </div>
