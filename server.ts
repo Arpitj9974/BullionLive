@@ -138,27 +138,29 @@ async function startupWarmup() {
 // ── Routes ─────────────────────────────────────────────────────────────────────
 
 // GET /api/market-prices — returns cached data instantly
-app.get('/api/market-prices', async (_req, res) => {
+app.get('/api/market-prices', (_req, res) => {
   if (cache) {
     // Return cached data immediately — blazing fast
     const ageSeconds = Math.round((Date.now() - cache.cachedAt) / 1000);
     return res.json({ ...cache, dataAgeSeconds: ageSeconds });
   }
 
-  // Cache not yet ready (very first request before warm-up finishes)
-  try {
-    const data = await fetchLiveMarketData();
-    cache = data;
-    return res.json({ ...data, dataAgeSeconds: 0 });
-  } catch (err: any) {
-    console.error('[Server] Critical error fetching market data:', err.message);
-    return res.json({
-      gold_usd: 2682.45, silver_usd: 32.15, platinum_usd: 970.10,
-      usd_inr_rate: 84.83, gold_change_percent: 0.42,
-      silver_change_percent: -0.18, platinum_change_percent: 0.31,
-      usd_inr_change_percent: 0.05, cachedAt: Date.now(), dataAgeSeconds: -1,
-    });
-  }
+  // Fallback if cache isn't ready yet (should rarely happen after warmup)
+  // These are "Safe Fallback" prices to give the UI something realistic 
+  // while the very first fetch finishes in the background.
+  return res.json({
+    gold_usd: 2684.50, 
+    silver_usd: 31.95, 
+    platinum_usd: 972.10,
+    usd_inr_rate: 84.85, 
+    gold_change_percent: 0.15,
+    silver_change_percent: -0.10, 
+    platinum_change_percent: 0.25,
+    usd_inr_change_percent: 0.05, 
+    cachedAt: Date.now(), 
+    dataAgeSeconds: -1,
+    error: 'Market data is warming up...'
+  });
 });
 
 // React catch-all
@@ -166,7 +168,8 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(port, async () => {
+app.listen(port, () => {
   console.log(`[Server] Running on http://localhost:${port}`);
-  await startupWarmup();
+  // NON-BLOCKING warmup: Start fetching prices immediately without stopping the server
+  startupWarmup();
 });
