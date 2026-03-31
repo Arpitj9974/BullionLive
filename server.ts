@@ -60,7 +60,33 @@ async function fetchSwissquoteSpot(instrument: string): Promise<number | null> {
   }
 }
 
-// ── Core Data Fetcher (Multi-Source: Swissquote PRIMARY → Yahoo FALLBACK) ─────
+// ── USD/INR Rate Fetcher (Yahoo PRIMARY → Frankfurter ECB FALLBACK) ──────────
+// Frankfurter uses European Central Bank data — no API key, no rate limits, works on all cloud servers
+async function fetchUsdInrRate(): Promise<number | null> {
+  // Try Yahoo Finance first (most accurate)
+  try {
+    const res = await yahooFinance.quote('INR=X') as any;
+    if (res?.regularMarketPrice && res.regularMarketPrice > 50) {
+      return res.regularMarketPrice as number;
+    }
+  } catch { /* fall through */ }
+
+  // Fallback: Frankfurter ECB Free API (USD → INR via EUR bridge)
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=INR', { signal: controller.signal });
+    clearTimeout(timer);
+    const data = await res.json() as any;
+    if (data?.rates?.INR && data.rates.INR > 50) {
+      console.log('[Cache] USD/INR from Frankfurter ECB:', data.rates.INR);
+      return data.rates.INR as number;
+    }
+  } catch { /* fall through */ }
+
+  return null;
+}
+
 async function fetchLiveMarketData(): Promise<CachedMarketData> {
   console.log('[Cache] Fetching fresh market data...');
 
@@ -87,8 +113,8 @@ async function fetchLiveMarketData(): Promise<CachedMarketData> {
   const silver_usd = xagSpot ?? yahooMap['SI=F']?.regularMarketPrice ?? cache?.silver_usd ?? 34;
   const platinum_usd = xptSpot ?? yahooMap['PL=F']?.regularMarketPrice ?? cache?.platinum_usd ?? 1000;
 
-  // USD/INR: Yahoo Finance only (Swissquote free feed doesn't cover INR)
-  const usd_inr = yahooMap['INR=X']?.regularMarketPrice ?? cache?.usd_inr_rate ?? 85;
+  // USD/INR: Yahoo Finance → Frankfurter ECB → previous cache → hardcoded current rate
+  const usd_inr = (await fetchUsdInrRate()) ?? cache?.usd_inr_rate ?? 85.5;
 
   // ── % changes always from Yahoo (Swissquote doesn't provide previous close) ──
   const computePercent = (sym: string, fallback: number) => {
