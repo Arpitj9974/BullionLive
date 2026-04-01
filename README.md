@@ -1,20 +1,58 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# AR-AuAgPt — Live Precious Metals Tracker
 
-# Run and deploy your AI Studio app
+Real-time **Gold (Au)**, **Silver (Ag)** & **Platinum (Pt)** price dashboard with institutional-grade spot data, USD/INR conversion, 30-year historical charts, and a value calculator.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/9915b748-bc1c-4690-9fa1-2a5e845bbd7a
+- **Live Spot Prices** — Swissquote institutional spot (primary) + Yahoo Finance futures (fallback)
+- **Dual Currency** — USD and INR with calibrated Indian import duty multipliers (IBJA-benchmarked)
+- **Dual Units** — Per ounce + per 10g/kg weight benchmarks
+- **30-Year Historical Charts** — Monthly price data with comparison mode
+- **Value Calculator** — Supports grams, ounces, kilograms, and tola
+- **PWA** — Installable on mobile with offline caching
+- **High-Performance Backend** — In-memory cache with 60s refresh, zero cold-start latency
+
+## Tech Stack
+
+**Frontend:** React 19, Vite, TailwindCSS v4, Recharts, Framer Motion  
+**Backend:** Express + TypeScript (tsx), Yahoo Finance 2, Swissquote API  
+**Deployment:** Render / Railway (unified single-service deployment)
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js 18+
 
+```bash
+npm install
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001/api/market-prices
+
+## Deploy
+
+### Railway (Recommended — no cold starts)
+1. Push to GitHub
+2. [Railway.app](https://railway.app/) → New Project → Deploy from GitHub
+3. Generate a public domain under Settings → Networking
+
+### Render
+1. Push to GitHub
+2. [Render.com](https://render.com/) → New Web Service
+3. **Build Command:** `npm install && npm run build`
+4. **Start Command:** `npm start`
+
+See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `PORT` | No | Server port (default: 3001) |
+| `GEMINI_API_KEY_1` | No | Optional Gemini API key |
+| `VITE_GOLD_API_KEY` | No | Optional GoldAPI key |
+
+## License
+
+Apache-2.0

@@ -6,15 +6,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   RefreshCw, 
   Coins, 
   History, 
   Calculator,
   Info,
-  ArrowUpRight,
-  ArrowDownRight,
   Clock,
   ChevronDown
 } from 'lucide-react';
@@ -86,6 +82,8 @@ export default function App() {
           else price = (point.price * currentUsdInr) / 3.11035;
         } else if (currency === 'USD' && usdUnit === 'g') {
           price = point.price / 31.1035;
+          if (metal === 'gold' || metal === 'platinum') price *= 10;
+          else if (metal === 'silver') price *= 1000;
         }
       }
 
@@ -97,6 +95,8 @@ export default function App() {
           else baseVal = (firstPoint * firstUsdInr) / 3.11035;
         } else if (currency === 'USD' && usdUnit === 'g') {
           baseVal = firstPoint / 31.1035;
+          if (metal === 'gold' || metal === 'platinum') baseVal *= 10;
+          else if (metal === 'silver') baseVal *= 1000;
         }
       }
 
@@ -108,7 +108,7 @@ export default function App() {
     });
   };
 
-  const currentHistory = React.useMemo(() => getNormalizedHistory(selectedHistoryMetal), [data, selectedHistoryMetal, currency, historyRange]);
+  const currentHistory = React.useMemo(() => getNormalizedHistory(selectedHistoryMetal), [data, selectedHistoryMetal, currency, usdUnit, historyRange]);
   
   const comparisonData = React.useMemo(() => {
     if (!comparisonMode || !data) return [];
@@ -122,7 +122,7 @@ export default function App() {
       silver: silver[idx]?.percentage || 0,
       platinum: platinum[idx]?.percentage || 0,
     }));
-  }, [data, comparisonMode, currency, historyRange]);
+  }, [data, comparisonMode, currency, usdUnit, historyRange]);
 
   const calculateValue = () => {
     if (!data) return "0";
@@ -238,40 +238,40 @@ export default function App() {
             <>
               <PriceCard 
                 title="Gold" 
-                price={currency === 'USD' ? (usdUnit === 'g' ? data?.gold.priceUsd! / 31.1035 : data?.gold.priceUsd) : data?.gold.priceInr} 
+                price={currency === 'USD' ? (usdUnit === 'g' ? (data?.gold.priceUsd! / 31.1035) * 10 : data?.gold.priceUsd) : data?.gold.priceInr} 
                 change={data?.gold.change} 
                 percent={data?.gold.changePercent}
                 history={data ? getNormalizedHistory('gold') : []}
                 color="yellow"
                 loading={loading}
                 currency={currency}
-                unit={currency === 'INR' ? '10g' : usdUnit}
+                unit={currency === 'INR' ? '10g' : (usdUnit === 'g' ? '10g' : 'oz')}
                 onClick={() => setSelectedHistoryMetal('gold')}
                 isActive={selectedHistoryMetal === 'gold'}
               />
               <PriceCard 
                 title="Silver" 
-                price={currency === 'USD' ? (usdUnit === 'g' ? data?.silver.priceUsd! / 31.1035 : data?.silver.priceUsd) : data?.silver.priceInr} 
+                price={currency === 'USD' ? (usdUnit === 'g' ? (data?.silver.priceUsd! / 31.1035) * 1000 : data?.silver.priceUsd) : data?.silver.priceInr} 
                 change={data?.silver.change} 
                 percent={data?.silver.changePercent}
                 history={data ? getNormalizedHistory('silver') : []}
                 color="slate"
                 loading={loading}
                 currency={currency}
-                unit={currency === 'INR' ? 'kg' : usdUnit}
+                unit={currency === 'INR' ? 'kg' : (usdUnit === 'g' ? 'kg' : 'oz')}
                 onClick={() => setSelectedHistoryMetal('silver')}
                 isActive={selectedHistoryMetal === 'silver'}
               />
               <PriceCard 
                 title="Platinum" 
-                price={currency === 'USD' ? (usdUnit === 'g' ? data?.platinum.priceUsd! / 31.1035 : data?.platinum.priceUsd) : data?.platinum.priceInr} 
+                price={currency === 'USD' ? (usdUnit === 'g' ? (data?.platinum.priceUsd! / 31.1035) * 10 : data?.platinum.priceUsd) : data?.platinum.priceInr} 
                 change={data?.platinum.change} 
                 percent={data?.platinum.changePercent}
                 history={data ? getNormalizedHistory('platinum') : []}
                 color="blue"
                 loading={loading}
                 currency={currency}
-                unit={currency === 'INR' ? '10g' : usdUnit}
+                unit={currency === 'INR' ? '10g' : (usdUnit === 'g' ? '10g' : 'oz')}
                 onClick={() => setSelectedHistoryMetal('platinum')}
                 isActive={selectedHistoryMetal === 'platinum'}
               />

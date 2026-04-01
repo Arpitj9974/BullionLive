@@ -195,8 +195,13 @@ app.get('/api/market-prices', (_req, res) => {
   });
 });
 
-// React catch-all
-app.get('*', (req, res) => {
+// Health check for uptime monitors (Render, Railway, UptimeRobot, cron-job.org)
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), cacheReady: !!cache });
+});
+
+// React catch-all — serve index.html for client-side routing
+app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

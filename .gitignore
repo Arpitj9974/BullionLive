@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+
+# Debug/scratch files (not needed for deployment)
+out.txt
+models.txt
