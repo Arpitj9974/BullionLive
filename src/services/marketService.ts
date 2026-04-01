@@ -107,10 +107,12 @@ export async function fetchLivePrices(): Promise<MarketData> {
 }
 
 function getMockData(): Omit<MarketData, 'isLive' | 'error'> {
+  // Emergency fallback — only shown if BOTH network sources AND localStorage fail simultaneously.
+  // Updated: Apr 2026 approximate market levels.
   return {
-    gold: { priceUsd: 2682.45, priceInr: 161700, change: 11.2, changePercent: 0.42, lastUpdated: new Date().toISOString() },
-    silver: { priceUsd: 32.15, priceInr: 256000, change: -0.06, changePercent: -0.18, lastUpdated: new Date().toISOString() },
-    platinum: { priceUsd: 970.10, priceInr: 67800, change: 3.0, changePercent: 0.31, lastUpdated: new Date().toISOString() },
+    gold: { priceUsd: 3100.00, priceInr: 149000, change: 12.4, changePercent: 0.40, lastUpdated: new Date().toISOString() },
+    silver: { priceUsd: 34.00, priceInr: 242000, change: -0.10, changePercent: -0.29, lastUpdated: new Date().toISOString() },
+    platinum: { priceUsd: 990.00, priceInr: 57000, change: 3.0, changePercent: 0.30, lastUpdated: new Date().toISOString() },
     exchangeRate: { rate: 84.83, change: 0.04, changePercent: 0.05, lastUpdated: new Date().toISOString() },
     dataAgeSeconds: 0,
   };
